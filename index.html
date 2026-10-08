@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FillerDetect AI – Speech Filler Word Detector</title>
+  <!-- Google Fonts for modern typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Top Header -->
+    <header class="main-header">
+      <div class="brand-container">
+        <div class="brand-logo">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="22"></line>
+            <line x1="8" y1="22" x2="16" y2="22"></line>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>FillerDetect <span class="badge-ai">AI</span></h1>
+          <p class="subtitle">“Speak clearly. Speak confidently.”</p>
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <button id="demoBtn" class="btn btn-secondary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-14 9V3z"/></svg>
+          Load Demo Speech
+        </button>
+        <button id="clearBtn" class="btn btn-ghost" title="Clear all text and reset statistics">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          Clear Analysis
+        </button>
+      </div>
+    </header>
+
+    <!-- Browser / Mic Alert Banner -->
+    <div id="alertBanner" class="alert-banner hidden">
+      <span class="alert-icon">⚠️</span>
+      <span id="alertText">Browser speech recognition is not supported in this browser. Please use Google Chrome or MS Edge.</span>
+      <button class="alert-close" onclick="document.getElementById('alertBanner').classList.add('hidden')">&times;</button>
+    </div>
+
+    <!-- Recording Control Panel -->
+    <section class="control-panel card">
+      <div class="mic-status-container">
+        <button id="recordBtn" class="record-btn">
+          <div class="pulse-ring"></div>
+          <svg id="micIcon" class="mic-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="23"></line>
+            <line x1="8" y1="23" x2="16" y2="23"></line>
+          </svg>
+        </button>
+        
+        <div class="status-info">
+          <div id="statusBadge" class="status-badge ready">
+            <span class="dot"></span>
+            <span id="statusText">Ready to Record</span>
+          </div>
+          <p class="record-hint">Click the microphone to start speaking or try voice commands</p>
+        </div>
+      </div>
+
+      <div class="timer-container">
+        <span class="timer-label">Speaking Time</span>
+        <span id="timerDisplay" class="timer-display">00:00</span>
+      </div>
+    </section>
+
+    <!-- Metrics Cards Grid -->
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Total Words</span>
+          <span class="metric-icon">📝</span>
+        </div>
+        <div id="totalWords" class="metric-value">0</div>
+        <div class="metric-sub">Words spoken in session</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Filler Words</span>
+          <span class="metric-icon warning">⚠️</span>
+        </div>
+        <div id="fillerCount" class="metric-value warning">0</div>
+        <div class="metric-sub">Detected speech fillers</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Filler Percentage</span>
+          <span class="metric-icon">📊</span>
+        </div>
+        <div id="fillerPercentage" class="metric-value">0.0%</div>
+        <div class="progress-bar-bg">
+          <div id="fillerProgress" class="progress-bar-fill" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Speaking Rate</span>
+          <span class="metric-icon">⚡</span>
+        </div>
+        <div id="speakingRate" class="metric-value">0 WPM</div>
+        <div class="metric-sub">Words per minute</div>
+      </div>
+
+      <div class="metric-card score-card">
+        <div class="metric-header">
+          <span class="metric-title">Clarity Rating</span>
+          <span class="metric-icon">🎯</span>
+        </div>
+        <div id="clarityRating" class="metric-value score-text">--</div>
+        <div id="scoreLabel" class="score-label">Click record or demo</div>
+      </div>
+    </section>
+
+    <!-- Main Content Layout (Transcript + Speech Score & Feedback) -->
+    <div class="dashboard-grid">
+      
+      <!-- Left Column: Transcript & Before/After Comparison -->
+      <main class="dashboard-main">
+        
+        <!-- Live Transcript Card -->
+        <div class="card transcript-card">
+          <div class="card-header">
+            <h2>🎙️ Live Speech Transcript</h2>
+            <div class="transcript-controls">
+              <span id="voiceCommandBadge" class="voice-cmd-indicator" title="Supported commands: Start recording, Stop recording, Clear transcript, Read score">
+                💬 Voice Commands Active
+              </span>
+            </div>
+          </div>
+          
+          <div class="transcript-body">
+            <div id="transcriptBox" class="transcript-content" contenteditable="true" data-placeholder="Your transcript will appear here in real-time as you speak, or click 'Load Demo Speech' to test..."></div>
+          </div>
+
+          <div class="transcript-footer">
+            <div class="filler-legend">
+              <span class="legend-item"><span class="legend-dot hesitation"></span> Hesitation (um, uh, hmm)</span>
+              <span class="legend-item"><span class="legend-dot conversation"></span> Conversation (like, you know)</span>
+              <span class="legend-item"><span class="legend-dot thinking"></span> Thinking (actually, basically)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Before & After Cleaner Speech View -->
+        <div class="card comparison-card">
+          <div class="card-header">
+            <h2>✨ Before & After Speech Comparison</h2>
+            <div class="tab-buttons">
+              <button id="tabSideBySide" class="tab-btn active">Side by Side</button>
+              <button id="tabCleanOnly" class="tab-btn">Clean Version</button>
+            </div>
+          </div>
+
+          <div class="comparison-body">
+            <div id="sideBySideContainer" class="comparison-grid">
+              <div class="comparison-box original">
+                <div class="comparison-title">Original Speech</div>
+                <div id="originalSpeechContent" class="comparison-text">
+                  <em>No transcript available yet.</em>
+                </div>
+              </div>
+              <div class="comparison-box cleaned">
+                <div class="comparison-title">Cleaner Speech (Fillers Removed)</div>
+                <div id="cleanedSpeechContent" class="comparison-text">
+                  <em>No transcript available yet.</em>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </main>
+
+      <!-- Right Column: Score Gauge, Suggestions & Categories -->
+      <aside class="dashboard-sidebar">
+        
+        <!-- Clarity Score Card -->
+        <div class="card score-gauge-card">
+          <div class="card-header">
+            <h2>Speech Clarity Score</h2>
+          </div>
+          <div class="score-gauge-container">
+            <div class="circular-progress">
+              <svg viewBox="0 0 100 100" class="circle-svg">
+                <circle class="circle-bg" cx="50" cy="50" r="42"></circle>
+                <circle id="scoreCircle" class="circle-bar" cx="50" cy="50" r="42" stroke-dasharray="264" stroke-dashoffset="264"></circle>
+              </svg>
+              <div class="circle-content">
+                <span id="scoreNumber" class="score-number">100</span>
+                <span class="score-max">/100</span>
+              </div>
+            </div>
+            <div id="scoreStatusBadge" class="score-status-badge excellent">
+              Excellent
+            </div>
+          </div>
+          <div class="read-score-container">
+            <button id="readScoreBtn" class="btn btn-outline btn-full">
+              🔊 Read Score Aloud
+            </button>
+          </div>
+        </div>
+
+        <!-- Filler Word Category Breakdown -->
+        <div class="card categories-card">
+          <div class="card-header">
+            <h2>Category Breakdown</h2>
+          </div>
+          <div class="category-list">
+            <div class="category-item hesitation">
+              <div class="cat-header">
+                <span class="cat-name">Hesitation</span>
+                <span id="hesitationCount" class="cat-count">0</span>
+              </div>
+              <div class="cat-words">um, uh, hmm, aaa, er</div>
+            </div>
+            <div class="category-item conversation">
+              <div class="cat-header">
+                <span class="cat-name">Conversation Fillers</span>
+                <span id="conversationCount" class="cat-count">0</span>
+              </div>
+              <div class="cat-words">like, you know, I mean, basically</div>
+            </div>
+            <div class="category-item thinking">
+              <div class="cat-header">
+                <span class="cat-name">Thinking Fillers</span>
+                <span id="thinkingCount" class="cat-count">0</span>
+              </div>
+              <div class="cat-words">actually, well, so, honestly</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic AI Suggestions -->
+        <div class="card suggestions-card">
+          <div class="card-header">
+            <h2>💡 Improvement Suggestions</h2>
+          </div>
+          <ul id="suggestionsList" class="suggestions-list">
+            <li class="suggestion-item">
+              <span class="sug-icon">✨</span>
+              <div class="sug-text">Start speaking or click "Load Demo Speech" to receive personalized feedback.</div>
+            </li>
+          </ul>
+        </div>
+
+      </aside>
+    </div>
+
+    <!-- Analytics & Breakdown Section (Table + Visual Bar Chart) -->
+    <section class="analytics-section">
+      <div class="card analytics-card">
+        <div class="card-header">
+          <h2>📊 Filler Word Frequency Analysis</h2>
+        </div>
+        <div class="analytics-grid">
+          <!-- Table -->
+          <div class="table-container">
+            <table class="analytics-table">
+              <thead>
+                <tr>
+                  <th>Filler Word</th>
+                  <th>Category</th>
+                  <th>Count</th>
+                  <th>Share (%)</th>
+                </tr>
+              </thead>
+              <tbody id="fillerTableBody">
+                <tr>
+                  <td colspan="4" class="empty-state">No filler words detected yet.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- Bar Chart Container -->
+          <div class="chart-container">
+            <div class="chart-header">
+              <h3>Top Detected Fillers</h3>
+            </div>
+            <div id="chartBars" class="chart-bars">
+              <div class="empty-state">Speak or run demo to populate chart.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Session History Section -->
+    <section class="history-section">
+      <div class="card history-card">
+        <div class="card-header">
+          <h2>📜 Session History</h2>
+          <div class="history-actions">
+            <button id="saveSessionBtn" class="btn btn-secondary btn-sm">
+              💾 Save Current Session
+            </button>
+            <button id="clearHistoryBtn" class="btn btn-ghost btn-sm text-danger">
+              🗑️ Clear History
+            </button>
+          </div>
+        </div>
+
+        <div class="history-body">
+          <div class="table-container">
+            <table class="history-table">
+              <thead>
+                <tr>
+                  <th>Date & Time</th>
+                  <th>Speaking Time</th>
+                  <th>Total Words</th>
+                  <th>Fillers</th>
+                  <th>Clarity Score</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="historyTableBody">
+                <tr>
+                  <td colspan="6" class="empty-state">No saved sessions in history.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>FillerDetect AI &copy; 2026 – Advanced Speech Analysis & Communication Intelligence</p>
+    </footer>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
